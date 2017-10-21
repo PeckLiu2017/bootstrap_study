@@ -1,0 +1,245 @@
+<div class="container">
+  <h2>Modal Example</h2>
+  <!-- Trigger the modal with a button -->
+  <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Open Modal</button>
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Modal Header</h4>
+        </div>
+        <div class="modal-body">
+          <p>Some text in the modal.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  +function ($) {
+    'use strict';
+      // MODAL CLASS DEFINITION
+      // =======================step 2-1
+      var Modal = function (element, options) {
+        // this 的内容：
+        // Modal {}
+        // $backdrop:null
+        // $body:[body, context: body]
+        // $dialog:[div.modal-dialog, prevObject: jQuery.fn.init(1), context: div#myModal.modal.fade, selector: ".modal-dialog"]
+        // $element:[div#myModal.modal.fade, context: div#myModal.modal.fade]
+        // ignoreBackdropClick:false
+        // isShown:null
+        // options:{target: "#myModal", toggle: "modal"}
+        // originalBodyPad:null
+        // scrollbarWidth:0
+        // __proto__:Object
+        // 传进来的各种参数
+        this.options             = options
+        this.$body               = $(document.body)
+        // element表示modal弹出框容器及内部元素，options是设置选项
+        this.$element            = $(element)
+        this.$dialog             = this.$element.find('.modal-dialog')
+        // modal下面的背景对象
+        this.$backdrop           = null
+        // 默认情况下，不设置是否已经显示弹窗
+        this.isShown             = null
+        this.originalBodyPad     = null
+        this.scrollbarWidth      = 0
+        this.ignoreBackdropClick = false
+
+        // 如果设置了remote，就加载remote指定url的内容到modal-content样式的元素内，并触发loaded.bs.modal事件
+        // if (this.options.remote) {
+        //   // 第一次不触发
+        //   this.$element
+        //     .find('.modal-content')
+        //     .load(this.options.remote, $.proxy(function () {
+        //       this.$element.trigger('loaded.bs.modal')
+        //     }, this))
+        // }
+      }
+
+      // MODAL DEFAULTS
+      // =======================step 2-2
+      Modal.DEFAULTS = {
+        backdrop: true, // 默认单击弹窗以外的地方时自动关闭弹窗
+        keyboard: true, // 默认设置，按Esc键关闭弹窗
+        show: true// 默认设置，单击触发元素时打开弹窗
+      }
+
+
+      Modal.prototype.show = function (_relatedTarget) {
+        if (window.console) {
+          console.log("step 7 Modal.prototype.show");
+        }
+        // 当前modal对象赋值为that，防止作用域冲突
+        var that = this
+        var e    = $.Event('show.bs.modal', { relatedTarget: _relatedTarget })
+        // 定义弹窗前的触发事件
+        //r.Event {type: "show.bs.modal", relatedTarget: button.btn.btn-info.btn-lg, timeStamp: 1494321898670, jQuery3210582187519681155: true}
+        this.$element.trigger(e)
+        if (window.console) {
+          console.log("step 8");
+        }
+        // 如果已经打开了(或者曾经被阻止过)，则退出执行，后续代码不做处理
+        if (this.isShown || e.isDefaultPrevented()) return
+        // 设置状态为打开
+        this.isShown = true
+        if (window.console) {
+          console.log("step 9");
+        }
+
+        this.checkScrollbar()
+        this.setScrollbar()
+        this.$body.addClass('modal-open')
+        if (window.console) {
+          console.log("step 10");
+        }
+        // 处理键盘事件，主要是设置按Esc键的时候是否关闭弹窗
+        this.escape()
+        this.resize()
+        if (window.console) {
+          console.log("step 11");
+        }
+
+        this.$element.on('click.dismiss.bs.modal', '[data-dismiss="modal"]', $.proxy(this.hide, this))
+        if (window.console) {
+          console.log("step 12");
+        }
+
+        this.$dialog.on('mousedown.dismiss.bs.modal', function () {
+          that.$element.one('mouseup.dismiss.bs.modal', function (e) {
+            if ($(e.target).is(that.$element)) that.ignoreBackdropClick = true
+          })
+        })
+        if (window.console) {
+          console.log("step 13");
+        }
+         // 如果单击了元素内的子元素(带有[data-dismiss="modal"]属性)，则关闭弹窗
+        this.backdrop(function () {
+          var transition = $.support.transition && that.$element.hasClass('fade')
+
+          if (!that.$element.parent().length) {
+            that.$element.appendTo(that.$body) // don't move modals dom position
+          }
+          if (window.console) {
+            console.log("step 14");
+          }
+
+          that.$element
+            .show()
+            .scrollTop(0)
+            if (window.console) {
+              console.log("step 15");
+            }
+
+          that.adjustDialog()
+          if (window.console) {
+            console.log("step 16");
+          }
+
+          if (transition) {
+            that.$element[0].offsetWidth // force reflow
+          }
+          if (window.console) {
+            console.log("step 17");
+          }
+
+          that.$element.addClass('in')
+          if (window.console) {
+            console.log("step 18");
+          }
+
+          that.enforceFocus()
+          if (window.console) {
+            console.log("step 19");
+          }
+
+          var e = $.Event('shown.bs.modal', { relatedTarget: _relatedTarget })
+          if (window.console) {
+            console.log("step 20");
+          }
+
+          transition ?
+            that.$dialog // wait for modal to slide in
+              .one('bsTransitionEnd', function () {
+                that.$element.trigger('focus').trigger(e)
+              })
+              .emulateTransitionEnd(Modal.TRANSITION_DURATION) :
+            that.$element.trigger('focus').trigger(e)
+        })
+      }
+
+      // MODAL PLUGIN DEFINITION
+      // =======================step 2 有分枝
+      function Plugin(option, _relatedTarget) {
+        // 这里的 this = [div#myModal.modal.fade, context: document, selector: "#myModal"] console 超链属性
+        // 是 MODAL DATA-API 中的 $target
+        // _relatedTarget = <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Open Modal</button>
+        // 是 MODAL DATA-API 中的 this
+        // option = {remote: undefined, target: "#myModal", toggle: "modal"}
+        return this.each(function () {
+          // 这里的 this 是 <!-- Modal --> 下面的所有 html 代码 内容根外面的 this 一样,不带 console 超链属性,是文本
+          // $this = [div#myModal.modal.fade, context: document, selector: "#myModal"] console 超链属性
+          var $this   = $(this)//是上一步的$target [div#myModal.modal.fade]
+          var data    = $this.data('bs.modal')//undefined
+          // typeof option == 'object' && option 表示 option 为 object 的话就返回其内容
+          // $.extend 函数中后面的参数覆盖前面的
+          var options = $.extend({}, Modal.DEFAULTS, $this.data(), typeof option == 'object' && option)
+          // 如果 data 不存在，就把 'bs.modal' 和 Modal 的实例组成键值对加进去
+          if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
+          console.log(options);
+          console.log(data);
+          // 暂时没看懂
+          if (typeof option == 'string') data[option](_relatedTarget)
+          // 否则调用 show 函数显示弹窗，data 是个 Modal 实例
+          // show 是个原型方法
+          else if (options.show) data.show(_relatedTarget)
+          //data=Modal {options: Object, $body: r.fn.init(1), $element: r.fn.init(1), $dialog: r.fn.init(1), $backdrop: null…}
+        })
+      }
+
+      // MODAL DATA-API
+      // =======================step 1
+      // .on( events [, selector ] [, data ], handler )
+      // 这里写 click.bs.modal.data-api 和 click 是一样的效果
+      // '[data-toggle="modal"]'是 selector
+      // 这里的 e 是
+      // jQuery.Event {originalEvent: MouseEvent, type: "click", timeStamp: 1085.3600000000001, jQuery112407648550656121686: true, isDefaultPrevented: ƒ, …}
+      // 记录了触发元素，事件类型，事件，坐标等信息
+      $(document).on('click.bs.modal.data-api', '[data-toggle="modal"]', function (e) {
+      // 获取 html 代码
+      // this = <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Open Modal</button>
+      // 捕获触发元素
+      // [button.btn.btn-info.btn-lg, context: button.btn.btn-info.btn-lg]
+      var $this   = $(this)
+      // 从触发元素中获取属性 href,第一次 href 是 undefined
+      var href    = $this.attr('href')
+      // 正则表达式 /.*(?=#[^\s]+$)/ 代表 "任意长度内容字符串" + "?=#" + "非空字符一次或多次"
+      // $target = [div#myModal.modal.fade, context: document, selector: "#myModal"]
+      // $target 是弹窗实例
+      // 在console中可以超链接到 div 对象
+      var $target = $($this.attr('data-target') || (href && href.replace(/.*(?=#[^\s]+$)/, '')))
+      // 第一次 $target.data() 中没有值，结果为 {}
+      // 如果弹窗元素上已经有该弹窗实例(即弹出过一次了)，则设置 option 值为字符串 toggle
+      // 否则将 $target.data() 、$this.data() merge 到 { remote: !/#/.test(href) && href },合并为 option 对象
+      // 第一次 option = {remote: undefined, target: "#myModal", toggle: "modal"}
+      // 这里的 target 的属性是字符串,在 console 中无法超链接到 div 对象,以后把这种情况称为带 console 超链属性
+      // toggle 用来转换弹窗的开关状态
+      var option  = $target.data('bs.modal') ? 'toggle' : $.extend({ remote: !/#/.test(href) && href }, $target.data(), $this.data())
+      // 如果 $this 是超链接，阻止默认事件
+      if ($this.is('a')) e.preventDefault()
+      // 第一次点击不触发这个函数
+      $target.one('show.bs.modal', function (showEvent) {
+      })
+      // 然后启动插件 Plugin
+      Plugin.call($target, option, this)
+    })
+  }(jQuery);
+</script>
