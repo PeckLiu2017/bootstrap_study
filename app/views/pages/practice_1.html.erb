@@ -26,7 +26,7 @@
   +function ($) {
     'use strict';
       // MODAL CLASS DEFINITION
-      // =======================step 2-1
+      // =======================step 2-2
       var Modal = function (element, options) {
         // this 的内容：
         // Modal {}
@@ -66,115 +66,226 @@
       }
 
       // MODAL DEFAULTS
-      // =======================step 2-2
+      // =======================step 2-1
       Modal.DEFAULTS = {
         backdrop: true, // 默认单击弹窗以外的地方时自动关闭弹窗
         keyboard: true, // 默认设置，按Esc键关闭弹窗
         show: true// 默认设置，单击触发元素时打开弹窗
       }
 
-
+      // Modal.prototype.show
+      // =======================step 2-3
       Modal.prototype.show = function (_relatedTarget) {
-        if (window.console) {
-          console.log("step 7 Modal.prototype.show");
-        }
-        // 当前modal对象赋值为that，防止作用域冲突
+        // this = Modal
+        // {options: {…}, $body: jQuery.fn.init(1), $element: jQuery.fn.init(1), $dialog: jQuery.fn.init(1),
+        // $backdrop: null, …}$backdrop: null$body: [body, context: body]
+        // $dialog: [div.modal-dialog, prevObject: jQuery.fn.init(1), context: div#myModal.modal.fade, selector: ".modal-dialog"]
+        // $element: [div#myModal.modal.fade, context: div#myModal.modal.fade] console超链
+        // ignoreBackdropClick: falseisShown: nulloptions: {backdrop: true, keyboard: true, show: true, target: "#myModal", toggle: "modal"}
+        // originalBodyPad: nullscrollbarWidth: 0__proto__: Object
         var that = this
-        var e    = $.Event('show.bs.modal', { relatedTarget: _relatedTarget })
+        // $.Event 注册 show 一个事件
         // 定义弹窗前的触发事件
-        //r.Event {type: "show.bs.modal", relatedTarget: button.btn.btn-info.btn-lg, timeStamp: 1494321898670, jQuery3210582187519681155: true}
+        // jQuery.Event {type: "show.bs.modal", relatedTarget: button.btn.btn-info.btn-lg,
+        // timeStamp: 1508596341226, jQuery1124035964844045527133: true}
+        var e    = $.Event('show.bs.modal', { relatedTarget: _relatedTarget })
+        // 这个 trigger 什么时候发挥作用？
         this.$element.trigger(e)
-        if (window.console) {
-          console.log("step 8");
-        }
         // 如果已经打开了(或者曾经被阻止过)，则退出执行，后续代码不做处理
+        // this.isShown 第一次是 null 直接 return
+        // e.isDefaultPrevented() 返回 event.preventDefault() 是否发生过
         if (this.isShown || e.isDefaultPrevented()) return
         // 设置状态为打开
         this.isShown = true
-        if (window.console) {
-          console.log("step 9");
-        }
-
         this.checkScrollbar()
         this.setScrollbar()
+        // $body:[body.modal-open, context: body.modal-open]
         this.$body.addClass('modal-open')
-        if (window.console) {
-          console.log("step 10");
-        }
         // 处理键盘事件，主要是设置按Esc键的时候是否关闭弹窗
-        this.escape()
-        this.resize()
-        if (window.console) {
-          console.log("step 11");
-        }
-
+        // this.escape()
+        // this.resize()
+        // $.proxy(this.hide, this)) 在 this 的作用域中执行 this.hide函数或属性
+        // 有 data-dismiss="modal" 的属性被点击,就隐藏它
         this.$element.on('click.dismiss.bs.modal', '[data-dismiss="modal"]', $.proxy(this.hide, this))
-        if (window.console) {
-          console.log("step 12");
-        }
-
+        // $dialog 表示这个弹窗
+        // one 方法跟 on 起到的作用是相同的，除了处理函数在一次被调用之后就会失效
+        // 点击了隐藏按钮之后
         this.$dialog.on('mousedown.dismiss.bs.modal', function () {
+          // 在弹窗上，松开鼠标按钮，忽略背景单击
           that.$element.one('mouseup.dismiss.bs.modal', function (e) {
             if ($(e.target).is(that.$element)) that.ignoreBackdropClick = true
           })
         })
-        if (window.console) {
-          console.log("step 13");
-        }
-         // 如果单击了元素内的子元素(带有[data-dismiss="modal"]属性)，则关闭弹窗
+
+        // 如果单击了元素内的子元素(带有[data-dismiss="modal"]属性)，则关闭弹窗
         this.backdrop(function () {
-          var transition = $.support.transition && that.$element.hasClass('fade')
+         var transition = $.support.transition && that.$element.hasClass('fade')
 
-          if (!that.$element.parent().length) {
-            that.$element.appendTo(that.$body) // don't move modals dom position
-          }
-          if (window.console) {
-            console.log("step 14");
-          }
+         // 如果它没祖先元素，就把它加入 body？？？具体为什么这样呢？
+         if (!that.$element.parent().length) {
+           // 加入 body 的最后面
+           that.$element.appendTo(that.$body) // don't move modals dom position
+         }
+         // 从这里开始显示出弹窗
+         // scrollTop 返回或者设置滚动条的位置
+         that.$element
+           .show()
+           .scrollTop(0)
+        // 这里的 this 竟然 undefined ？
+        // 这里的 that 是 Modal ？
+        //  that.adjustDialog()
+         if (transition) {
+           that.$element[0].offsetWidth // force reflow
+         }
+         // 加入 in 样式
+         that.$element.addClass('in')
 
-          that.$element
-            .show()
-            .scrollTop(0)
-            if (window.console) {
-              console.log("step 15");
-            }
+         that.enforceFocus()
 
-          that.adjustDialog()
-          if (window.console) {
-            console.log("step 16");
-          }
+         // 显示弹窗之后的事件
+         var e = $.Event('shown.bs.modal', { relatedTarget: _relatedTarget })
 
-          if (transition) {
-            that.$element[0].offsetWidth // force reflow
-          }
-          if (window.console) {
-            console.log("step 17");
-          }
-
-          that.$element.addClass('in')
-          if (window.console) {
-            console.log("step 18");
-          }
-
-          that.enforceFocus()
-          if (window.console) {
-            console.log("step 19");
-          }
-
-          var e = $.Event('shown.bs.modal', { relatedTarget: _relatedTarget })
-          if (window.console) {
-            console.log("step 20");
-          }
-
-          transition ?
-            that.$dialog // wait for modal to slide in
-              .one('bsTransitionEnd', function () {
-                that.$element.trigger('focus').trigger(e)
-              })
-              .emulateTransitionEnd(Modal.TRANSITION_DURATION) :
-            that.$element.trigger('focus').trigger(e)
+         transition ?
+           that.$dialog // wait for modal to slide in
+             .one('bsTransitionEnd', function () {
+               that.$element.trigger('focus').trigger(e)
+             })
+             .emulateTransitionEnd(Modal.TRANSITION_DURATION) :
+           that.$element.trigger('focus').trigger(e)
         })
       }
+
+      // 确保当前打开的弹窗处于焦点状态
+      // Modal.prototype.backdrop
+      // =======================step 2-7
+       Modal.prototype.enforceFocus = function () {
+         $(document)
+           .off('focusin.bs.modal') // guard against infinite focus loop
+           .on('focusin.bs.modal', $.proxy(function (e) {
+            // e.target 是一开始的触发按钮
+            // this.$element[0]是充满整个屏幕的弹窗
+            // this.$element.has(e.target).length) 检查 e.target 是否在 this.$element 之中
+            // 给 this.$element加焦点
+             if (document !== e.target &&
+                 this.$element[0] !== e.target &&
+                 !this.$element.has(e.target).length) {
+               this.$element.trigger('focus')
+             }
+           }, this))
+       }
+
+
+      // 添加背景，打开弹窗时触发
+      // Modal.prototype.backdrop
+      // =======================step 2-6
+      Modal.prototype.backdrop = function (callback) {
+        // this 仍然是那个 modal
+        var that = this
+        // 增加 fade 属性
+        var animate = this.$element.hasClass('fade') ? 'fade' : ''
+        // 在默认值里面设置的 backdrop = true
+        if (this.isShown && this.options.backdrop) {
+          // console.log(doAnimate) = undefined
+          var doAnimate = $.support.transition && animate
+          // 点击触发元素之后，先增加暗色背景
+          this.$backdrop = $(document.createElement('div'))
+            .addClass('modal-backdrop ' + animate)
+            .appendTo(this.$body)
+          //
+          this.$element.on('click.dismiss.bs.modal', $.proxy(function (e) {
+
+            if (this.ignoreBackdropClick) {
+              this.ignoreBackdropClick = false
+              return
+            }
+            if (e.target !== e.currentTarget) return
+
+            this.options.backdrop == 'static'
+              ? this.$element[0].focus()
+              : this.hide()
+          }, this))
+
+          // offsetWidth = width + padding + border
+          if (doAnimate) this.$backdrop[0].offsetWidth // force reflow
+          // 本来的 div.modal-backdrop.fade 加上了 in 样式
+          this.$backdrop.addClass('in')
+          // 这个 callback 就是在 show 中定义的 transition 等等
+          // 它作为参数传入
+          if (!callback) return
+          // 第一次 doAnimate 没有定义，执行 callback()
+          doAnimate ?
+            this.$backdrop
+              .one('bsTransitionEnd', callback)
+              .emulateTransitionEnd(Modal.BACKDROP_TRANSITION_DURATION) :
+            callback()
+        }
+      }
+
+      // Modal.prototype.adjustDialog
+      // =======================step 2-7
+      Modal.prototype.adjustDialog = function () {
+
+        var modalIsOverflowing = this.$element[0].scrollHeight > document.documentElement.clientHeight
+
+        this.$element.css({
+          paddingLeft:  !this.bodyIsOverflowing && modalIsOverflowing ? this.scrollbarWidth : '',
+          paddingRight: this.bodyIsOverflowing && !modalIsOverflowing ? this.scrollbarWidth : ''
+        })
+      }
+
+      // Modal.prototype.checkScrollbar
+      // =======================step 2-4
+      Modal.prototype.checkScrollbar = function () {
+        // 整个浏览器窗口的宽度 1440
+        var fullWindowWidth = window.innerWidth
+        // ？什么情况下会触发？
+        if (!fullWindowWidth) { // workaround for missing window.innerWidth in IE8
+          var documentElementRect = document.documentElement.getBoundingClientRect()
+          // 元素的实际宽度
+          fullWindowWidth = documentElementRect.right - Math.abs(documentElementRect.left)
+        }
+        // fullWindowWidth 大于 document.body.clientWidth, body溢出
+        this.bodyIsOverflowing = document.body.clientWidth < fullWindowWidth
+        this.scrollbarWidth = this.measureScrollbar()
+      }
+
+
+      // Modal.prototype.setScrollbar
+      // =======================step 2-5
+      Modal.prototype.setScrollbar = function () {
+        // parseInt() 解析字符串返回一个整数
+        var bodyPad = parseInt((this.$body.css('padding-right') || 0), 10)
+        this.originalBodyPad = document.body.style.paddingRight || ''
+        // 设置 body 的 padding-right
+        if (this.bodyIsOverflowing) this.$body.css('padding-right', bodyPad + this.scrollbarWidth)
+      }
+
+      Modal.prototype.measureScrollbar = function () {
+        var scrollDiv = document.createElement('div')
+        scrollDiv.className = 'modal-scrollbar-measure'
+        this.$body.append(scrollDiv)
+        // offsetWidth 是加上 border 的元素宽度
+        // clientWidth 根据前面的对象来看，这里 scrollDiv.clientWidth = 50
+        var scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth
+        // 难道还会有多个 body ？
+        // this.$body[0] console 超链属性
+        this.$body[0].removeChild(scrollDiv)
+        // 第一次 scrollbarWidth = 0
+        return scrollbarWidth
+      }
+
+      // Modal.prototype.measureScrollbar = function () { // thx walsh
+      //   if (window.console) {
+      //     console.log("step 51");
+      //   }
+      //   var scrollDiv = document.createElement('div')
+      //   scrollDiv.className = 'modal-scrollbar-measure'
+      //   this.$body.append(scrollDiv)
+      //   var scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth
+      //   this.$body[0].removeChild(scrollDiv)
+      //   return scrollbarWidth
+      // }
+
 
       // MODAL PLUGIN DEFINITION
       // =======================step 2 有分枝
@@ -194,8 +305,6 @@
           var options = $.extend({}, Modal.DEFAULTS, $this.data(), typeof option == 'object' && option)
           // 如果 data 不存在，就把 'bs.modal' 和 Modal 的实例组成键值对加进去
           if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
-          console.log(options);
-          console.log(data);
           // 暂时没看懂
           if (typeof option == 'string') data[option](_relatedTarget)
           // 否则调用 show 函数显示弹窗，data 是个 Modal 实例
