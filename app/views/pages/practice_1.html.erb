@@ -73,6 +73,12 @@
         show: true// 默认设置，单击触发元素时打开弹窗
       }
 
+      Modal.prototype.toggle = function (_relatedTarget) {
+        //this.isShown是 true 就 hide(), 否则 show 
+        //<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Open Modal</button>
+        return this.isShown ? this.hide() : this.show(_relatedTarget)
+      }
+
       // Modal.prototype.show
       // =======================step 2-3
       Modal.prototype.show = function (_relatedTarget) {
@@ -438,12 +444,34 @@
           // 如果 data 不存在，就把 'bs.modal' 和 Modal 的实例组成键值对加进去
           if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
           // 暂时没看懂
+          console.log("========");
+          console.log(option);
+          console.log("--------");
+                 console.log(typeof option == 'string');
+                 console.log("=======-------");
+                 console.log(data);
+                 console.log("-------=======");
+
           if (typeof option == 'string') data[option](_relatedTarget)
           // 否则调用 show 函数显示弹窗，data 是个 Modal 实例
           // show 是个原型方法
           else if (options.show) data.show(_relatedTarget)
           //data=Modal {options: Object, $body: r.fn.init(1), $element: r.fn.init(1), $dialog: r.fn.init(1), $backdrop: null…}
         })
+      }
+
+
+      // MODAL NO CONFLICT
+      // ================= first than step 1
+      // 先备份
+      var old = $.fn.modal
+
+      $.fn.modal             = Plugin
+      $.fn.modal.Constructor = Modal
+      // 再还原
+      $.fn.modal.noConflict = function () {
+        $.fn.modal = old
+        return this
       }
 
       // MODAL DATA-API
@@ -473,11 +501,26 @@
       // 第一次 option = {remote: undefined, target: "#myModal", toggle: "modal"}
       // 这里的 target 的属性是字符串,在 console 中无法超链接到 div 对象,以后把这种情况称为带 console 超链属性
       // toggle 用来转换弹窗的开关状态
+      // 第二次 option = toggle
       var option  = $target.data('bs.modal') ? 'toggle' : $.extend({ remote: !/#/.test(href) && href }, $target.data(), $this.data())
+      // console.log("====");
+      // console.log(option);
+      // console.log("----");
       // 如果 $this 是超链接，阻止默认事件
       if ($this.is('a')) e.preventDefault()
-      // 第一次点击不触发这个函数
+      // 什么时候触发 show ？
       $target.one('show.bs.modal', function (showEvent) {
+        // showEvent =
+        // jQuery.Event {type: "show", relatedTarget: button.btn.btn-info.btn-lg, timeStamp: 1508683190953,
+        // jQuery112407061662116767498: true, isTrigger: 3, …}
+         if (showEvent.isDefaultPrevented()) return // only register focus restorer if modal will actually get shown
+         $target.one('hidden.bs.modal', function () {
+           if (window.console) {
+             console.log("step 61");
+           }
+           //定义一次hide事件，给所单击元素加上焦点??????为什么要加焦点啊？
+           $this.is(':visible') && $this.trigger('focus')
+         })
       })
       // 然后启动插件 Plugin
       Plugin.call($target, option, this)

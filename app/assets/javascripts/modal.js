@@ -475,7 +475,13 @@
 //        var $this   = $(this)//是上一步的$target [div#myModal.modal.fade]
 //        var data    = $this.data('bs.modal')//undefined
 //        var options = $.extend({}, Modal.DEFAULTS, $this.data(), typeof option == 'object' && option)
-//
+//        console.log("====");
+//        console.log(option);
+//        console.log("----");
+//        console.log(typeof option == 'string');
+//        console.log("=======");
+//        console.log(data);
+//        console.log("-------");
 //        if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
 //        if (typeof option == 'string') data[option](_relatedTarget)
 //        else if (options.show) data.show(_relatedTarget)
