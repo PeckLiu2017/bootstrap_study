@@ -152,6 +152,7 @@
              })
              .emulateTransitionEnd(Modal.TRANSITION_DURATION) :
            that.$element.trigger('focus').trigger(e)
+            // trigger hide(e)
         })
       }
 
@@ -218,9 +219,132 @@
               .one('bsTransitionEnd', callback)
               .emulateTransitionEnd(Modal.BACKDROP_TRANSITION_DURATION) :
             callback()
+            // else if 开始关闭弹窗
+        } else if (!this.isShown && this.$backdrop) {
+
+           this.$backdrop.removeClass('in')
+
+           // 删除 callback 前先把 callback 执行一遍
+           var callbackRemove = function () {
+            // 这里开始移除背景
+            // 前面为什么不执行呢？
+            // 执行 removeBackdrop
+            // callback()中执行了 resetScrollbar 和 resetAdjustments,什么时候加进去的呢？
+            // callback 的内容：
+            // ƒ () {
+            //   that.$body.removeClass('modal-open')
+            //   that.resetAdjustments()
+            //   that.resetScrollbar()
+            //   that.$element.trigger('hidden.bs.modal')
+            // }
+             that.removeBackdrop()
+             callback && callback()
+           }
+           $.support.transition && this.$element.hasClass('fade') ?
+             this.$backdrop
+               .one('bsTransitionEnd', callbackRemove)
+               .emulateTransitionEnd(Modal.BACKDROP_TRANSITION_DURATION) :
+             callbackRemove()
+
+         } else if (callback) {
+           //  执行回调函数如果没有就不执行
+           callback()
+         }
+      }
+
+      // 添加背景，打开弹窗时触发
+      // Modal.prototype.backdrop
+      // =======================step 2-8
+      //关闭弹窗
+      Modal.prototype.hide = function (e) {
+        if (e) e.preventDefault()
+
+        e = $.Event('hide.bs.modal')
+
+
+        this.$element.trigger(e)
+
+        // 如果还没打开过弹窗，就 return
+        if (!this.isShown || e.isDefaultPrevented()) return
+        // 重新设置 isShown = false
+        this.isShown = false
+
+        this.escape()
+        this.resize()
+
+        $(document).off('focusin.bs.modal')
+
+        // 没看 in 样式怎么用啊，就么就删除了？
+        // 解绑 click mouseup mousedown 事件
+        this.$element
+          .removeClass('in')
+          .off('click.dismiss.bs.modal')
+          .off('mouseup.dismiss.bs.modal')
+
+        this.$dialog.off('mousedown.dismiss.bs.modal')
+
+
+        $.support.transition && this.$element.hasClass('fade') ?
+          this.$element
+            .one('bsTransitionEnd', $.proxy(this.hideModal, this))
+            .emulateTransitionEnd(Modal.TRANSITION_DURATION) :
+          this.hideModal()
+          // this.hideModal() 关闭弹窗
+      }
+
+      // 关闭弹窗   ---------section2-11
+      Modal.prototype.hideModal = function () {
+        var that = this
+        // 关闭弹窗
+        this.$element.hide()
+        // console.log(this);
+        this.backdrop(function () {
+          that.$body.removeClass('modal-open')
+          that.resetAdjustments()
+          that.resetScrollbar()
+          that.$element.trigger('hidden.bs.modal')
+        })
+      }
+
+      // 删除背景，关闭弹窗时触发  ----------section2-12
+      Modal.prototype.removeBackdrop = function () {
+        if (window.console) {
+          console.log("step 35");
+        }
+        this.$backdrop && this.$backdrop.remove()
+        this.$backdrop = null
+      }
+
+      // 按Esc键是否退出的处理
+      // Modal.prototype.escape
+      // =======================step 2-9
+      //关闭弹窗
+      Modal.prototype.escape = function () {
+        // this 一直是这个 modal 函数
+        // 第一次 this.isShown = false
+        if (this.isShown && this.options.keyboard) {
+          this.$element.on('keydown.dismiss.bs.modal', $.proxy(function (e) {
+
+            // 如果按了 esc 键并且 this.hide() 定义
+            e.which == 27 && this.hide()
+          }, this))
+          // isShown 在初始 modal 中定义的
+        } else if (!this.isShown) {
+          this.$element.off('keydown.dismiss.bs.modal')
         }
       }
 
+      // Modal.prototype.resize
+      // =======================step 2-10
+      // 根据 isShown 的值决定是否调整尺寸
+      Modal.prototype.resize = function () {
+
+        if (this.isShown) {
+          $(window).on('resize.bs.modal', $.proxy(this.handleUpdate, this))
+        } else {
+          $(window).off('resize.bs.modal')
+        }
+      }
       // Modal.prototype.adjustDialog
       // =======================step 2-7
       Modal.prototype.adjustDialog = function () {
@@ -230,6 +354,19 @@
         this.$element.css({
           paddingLeft:  !this.bodyIsOverflowing && modalIsOverflowing ? this.scrollbarWidth : '',
           paddingRight: this.bodyIsOverflowing && !modalIsOverflowing ? this.scrollbarWidth : ''
+        })
+      }
+
+      // Modal.prototype.resetAdjustments
+      // =======================step 2-12
+      Modal.prototype.resetAdjustments = function () {
+        if (window.console) {
+          console.log("step 47");
+        }
+        // 空字符串删除CSS属性
+        this.$element.css({
+          paddingLeft: '',
+          paddingRight: ''
         })
       }
 
@@ -260,6 +397,14 @@
         if (this.bodyIsOverflowing) this.$body.css('padding-right', bodyPad + this.scrollbarWidth)
       }
 
+      Modal.prototype.resetScrollbar = function () {
+        if (window.console) {
+          console.log("step 50");
+        }
+        this.$body.css('padding-right', this.originalBodyPad)
+      }
+
+
       Modal.prototype.measureScrollbar = function () {
         var scrollDiv = document.createElement('div')
         scrollDiv.className = 'modal-scrollbar-measure'
@@ -273,19 +418,6 @@
         // 第一次 scrollbarWidth = 0
         return scrollbarWidth
       }
-
-      // Modal.prototype.measureScrollbar = function () { // thx walsh
-      //   if (window.console) {
-      //     console.log("step 51");
-      //   }
-      //   var scrollDiv = document.createElement('div')
-      //   scrollDiv.className = 'modal-scrollbar-measure'
-      //   this.$body.append(scrollDiv)
-      //   var scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth
-      //   this.$body[0].removeChild(scrollDiv)
-      //   return scrollbarWidth
-      // }
-
 
       // MODAL PLUGIN DEFINITION
       // =======================step 2 有分枝
